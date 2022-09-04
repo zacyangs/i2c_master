@@ -6,7 +6,9 @@ module sa9226_wrapper(
     input direct,
     input [7:0] addr,
     input [7:0] din,
-    output [7:0] dout,
+    output           dout_vld,
+    output [7:0]     dout,
+    output           dout_err,
     inout i2c_scl,
     inout i2c_sda
 );
@@ -48,24 +50,29 @@ sa9226_ctrl#(.SLAVE_ADDR(SLAVE_ADDR)) U0_sa9226_ctrl(/*autoinst*/
         .direct                 (direct                         ), //input
         .addr                   (addr[7:0]                      ), //input
         .din                    (din[7:0]                       ), //input
-        .dout                   (dout[7:0]                      )  //output
+        .dout_vld               (dout_vld                       ), //output // INST_NEW
+        .dout                   (dout[7:0]                      ), //output
+        .dout_err               (dout_err                       )  //output // INST_NEW
     );
 
 i2c_master_top U0_i2c_master_top (
     /*autoinst*/
-    .clk                    (clk                            ), //input
-    .rst                    (rst                            ), //input
-    .apb_sel                (apb_sel                        ), //input
-    .apb_en                 (apb_en                         ), //input
-    .apb_write              (apb_write                      ), //input
-    .apb_ready              (apb_ready                      ), //output
-    .apb_addr               (apb_addr[31:0]                 ), //input
-    .apb_wdata              (apb_wdata[31:0]                ), //input
-    .apb_rdata              (apb_rdata[31:0]                ), //output
-    // I2C signals
-    .i2c_scl                (i2c_scl                        ), //inout
-    .i2c_sda                (i2c_sda                        ), //inout
-    .irq                    (irq                            )  //output
-);
+        .clk                    (clk                            ), //input
+        .rst                    (rst                            ), //input
+        .apb_sel                (apb_sel                        ), //input
+        .apb_en                 (apb_en                         ), //input
+        .apb_write              (apb_write                      ), //input
+        .apb_ready              (apb_ready                      ), //output
+        .apb_addr               (apb_addr[31:0]                 ), //input
+        .apb_wdata              (apb_wdata[31:0]                ), //input
+        .apb_rdata              (apb_rdata[31:0]                ), //output
+        // I2C signals
+        .i2c_scl                (i2c_scl                        ), //inout
+        .i2c_sda                (i2c_sda                        ), //inout
+        .irq                    (irq                            )  //output
+        // done signal: command completed, clear command register
+        // status register signals
+        // hookup byte controller block
+    );
 
 endmodule
