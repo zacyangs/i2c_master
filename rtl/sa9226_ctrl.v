@@ -100,12 +100,18 @@ begin
         STOP      : if(ready_apb & valid_apb) state_nxt[3:0] = WAIT_IRQ;
         DATA_OUT  : if(dout_vld_apb) state_nxt[3:0] = READY_TO_WORK;
         WAIT_IRQ  : if(irq_pulse)    state_nxt[3:0] = CLEAR_IRQ;
-        CLEAR_IRQ : if(ready_apb && valid_apb)state_nxt[3:0] = READ_ACK;
+        CLEAR_IRQ : 
+            if(ready_apb && valid_apb) begin 
+                if(state_pre[3:0] == READ_0)
+                    state_nxt[3:0] = DATA_OUT;
+                else if(state_pre[3:0] == STOP)
+                    state_nxt[3:0] = READY_TO_WORK;
+                else
+                    state_nxt[3:0] = READ_ACK;
+            end
         READ_ACK  : 
             if(dout_vld_apb) begin
-                if(state_pre[3:0] == STOP)
-                    state_nxt = READY_TO_WORK;
-                else if(~dout_apb[7]) 
+                if(~dout_apb[7]) 
                     state_nxt[3:0] = state_pre[3:0] + 1;
                 else  begin
                     state_nxt = STOP;
@@ -133,7 +139,7 @@ begin
         ADDR_1        : begin addr_apb = CR  ; din_apb = 32'h10; end // write
         ADDR_RD_0     : begin addr_apb = TXR ; din_apb = {SLAVE_ADDR, RD}; end
         ADDR_RD_1     : begin addr_apb = CR  ; din_apb = 32'h90; end // start write
-        READ_0        : begin addr_apb = CR  ; din_apb = 32'h60; end // stop read 
+        READ_0        : begin addr_apb = CR  ; din_apb = 32'h68; end // stop read NACK
         STOP          : begin addr_apb = CR  ; din_apb = 32'h40; end // stop 
         DATA_OUT      : begin addr_apb = RXR ; write_apb = 1'b0; end
         READ_ACK      : begin addr_apb = SR  ; write_apb = 1'b0; end
@@ -165,10 +171,12 @@ begin
             if(state == DATA_OUT) begin
                 dout_vld <= 1'b1;
                 dout_err <= 1'b0;
-            end else if(state == READ_ACK && state_nxt == READY_TO_WORK) begin
+            end else if(state == READ_ACK && dout_apb[7]) begin
                 dout_err <= 1;
-                if(dout_apb[7]) dout_vld <= 1'b1;
+                dout_vld <= 1'b1;
             end
+            else
+                dout_vld <= 1'b0;
         end
         else
             dout_vld <= 1'b0;
@@ -200,4 +208,3 @@ apb_adapter U0_apb_adapter (/*autoinst*/
 
 
 endmodule
-
